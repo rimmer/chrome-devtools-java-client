@@ -37,6 +37,10 @@ public class ChromeVersion {
   @JsonProperty("User-Agent")
   private String userAgent;
 
+  // TODO move to an android abstraction
+  @JsonProperty("Android-Package")
+  private String androidPackage;
+
   @JsonProperty("V8-Version")
   private String v8Version;
 
@@ -74,6 +78,15 @@ public class ChromeVersion {
   }
 
   /**
+   * Gets package of connected Android WebView.
+   *
+   * @return package in a form "com.example.app"
+   */
+  public String getAndroidPackage() {
+    return androidPackage;
+  }
+
+  /**
    * Gets v 8 version.
    *
    * @return the v 8 version
@@ -97,6 +110,11 @@ public class ChromeVersion {
    * @return the web socket debugger url
    */
   public String getWebSocketDebuggerUrl() {
-    return webSocketDebuggerUrl;
+    // Convert a 'ws:///devtools/page/3' websocket URL to a ws://localhost/devtools/page/3 url.
+    if (webSocketDebuggerUrl != null && webSocketDebuggerUrl.startsWith("ws:///")) {
+      return "ws://localhost/" + webSocketDebuggerUrl.substring("ws:///".length());
+    } else {
+      return webSocketDebuggerUrl;
+    }
   }
 }

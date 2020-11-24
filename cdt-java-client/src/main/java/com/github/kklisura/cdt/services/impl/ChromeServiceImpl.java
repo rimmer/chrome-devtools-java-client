@@ -58,6 +58,8 @@ public class ChromeServiceImpl implements ChromeService {
   private static final String EMPTY_STRING = "";
 
   private static final String LOCALHOST = "localhost";
+  private static final String DEFAULT_HTTP_SCHEME = "http";
+  private static final int DEFAULT_HTTP_PORT = 80;
 
   private static final String LIST_TABS = "json/list";
   private static final String CREATE_TAB = "json/new";
@@ -65,11 +67,28 @@ public class ChromeServiceImpl implements ChromeService {
   private static final String CLOSE_TAB = "json/close";
   private static final String VERSION = "json/version";
 
+  private String scheme;
   private String host;
   private int port;
 
   private WebSocketServiceFactory webSocketServiceFactory;
   private Map<String, ChromeDevToolsService> chromeDevToolServiceCache = new ConcurrentHashMap<>();
+
+  /**
+   * Creates a new chrome service given a scheme, host, port and web service socket factory.
+   *
+   * @param scheme Chrome connection scheme.
+   * @param host Chrome host.
+   * @param port Chrome debugging port.
+   * @param webSocketServiceFactory Web socket service factory.
+   */
+  public ChromeServiceImpl(
+      String scheme, String host, int port, WebSocketServiceFactory webSocketServiceFactory) {
+    this.scheme = scheme;
+    this.host = host;
+    this.port = (port == -1 ? DEFAULT_HTTP_PORT : port);
+    this.webSocketServiceFactory = webSocketServiceFactory;
+  }
 
   /**
    * Creates a new chrome service given a host, port and web service socket factory.
@@ -79,9 +98,18 @@ public class ChromeServiceImpl implements ChromeService {
    * @param webSocketServiceFactory Web socket service factory.
    */
   public ChromeServiceImpl(String host, int port, WebSocketServiceFactory webSocketServiceFactory) {
-    this.host = host;
-    this.port = port;
-    this.webSocketServiceFactory = webSocketServiceFactory;
+    this(DEFAULT_HTTP_SCHEME, host, port, webSocketServiceFactory);
+  }
+
+  /**
+   * Creates a new chrome service given scheme, host and a port.
+   *
+   * @param scheme Chrome scheme.
+   * @param host Chrome host.
+   * @param port Chrome debugging port.
+   */
+  public ChromeServiceImpl(String scheme, String host, int port) {
+    this(scheme, host, port, (wsUrl -> WebSocketServiceImpl.create(URI.create(wsUrl))));
   }
 
   /**
@@ -124,7 +152,8 @@ public class ChromeServiceImpl implements ChromeService {
 
   @Override
   public List<ChromeTab> getTabs() throws ChromeServiceException {
-    return Arrays.asList(request(ChromeTab[].class, "http://%s:%d/%s", host, port, LIST_TABS));
+    return Arrays.asList(
+        request(ChromeTab[].class, "%s://%s:%d/%s", scheme, host, port, LIST_TABS));
   }
 
   @Override
@@ -134,17 +163,17 @@ public class ChromeServiceImpl implements ChromeService {
 
   @Override
   public ChromeTab createTab(String tab) throws ChromeServiceException {
-    return request(ChromeTab.class, "http://%s:%d/%s?%s", host, port, CREATE_TAB, tab);
+    return request(ChromeTab.class, "%s://%s:%d/%s?%s", scheme, host, port, CREATE_TAB, tab);
   }
 
   @Override
   public void activateTab(ChromeTab tab) throws ChromeServiceException {
-    request(Void.class, "http://%s:%d/%s/%s", host, port, ACTIVATE_TAB, tab.getId());
+    request(Void.class, "%s://%s:%d/%s/%s", scheme, host, port, ACTIVATE_TAB, tab.getId());
   }
 
   @Override
   public void closeTab(ChromeTab tab) throws ChromeServiceException {
-    request(Void.class, "http://%s:%d/%s/%s", host, port, CLOSE_TAB, tab.getId());
+    request(Void.class, "%s://%s:%d/%s/%s", scheme, host, port, CLOSE_TAB, tab.getId());
 
     // Remove dev tools from cache.
     clearChromeDevToolsServiceCache(tab);
@@ -152,7 +181,7 @@ public class ChromeServiceImpl implements ChromeService {
 
   @Override
   public ChromeVersion getVersion() throws ChromeServiceException {
-    return request(ChromeVersion.class, "http://%s:%d/%s", host, port, VERSION);
+    return request(ChromeVersion.class, "%s://%s:%d/%s", scheme, host, port, VERSION);
   }
 
   @Override

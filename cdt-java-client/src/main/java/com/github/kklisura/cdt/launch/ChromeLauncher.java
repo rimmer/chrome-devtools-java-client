@@ -36,6 +36,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -180,6 +181,10 @@ public class ChromeLauncher implements AutoCloseable {
    */
   public ChromeService launch() throws ChromeProcessException {
     return launch(true);
+  }
+
+  public static ChromeService connect(URI uri) {
+    return new ChromeServiceImpl(uri.getScheme(), uri.getHost(), uri.getPort());
   }
 
   /**

@@ -124,7 +124,12 @@ public final class ChromeTab {
    * @return the web socket debugger url
    */
   public String getWebSocketDebuggerUrl() {
-    return webSocketDebuggerUrl;
+    // Convert a 'ws:///devtools/page/3' websocket URL to a ws://localhost/devtools/page/3 url.
+    if (webSocketDebuggerUrl != null && webSocketDebuggerUrl.startsWith("ws:///")) {
+      return "ws://localhost/" + webSocketDebuggerUrl.substring("ws:///".length());
+    } else {
+      return webSocketDebuggerUrl;
+    }
   }
 
   /**
